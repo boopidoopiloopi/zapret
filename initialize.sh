@@ -22,7 +22,6 @@ git clone "$REPO_URL" "$TEMP_DIR"
 rm -rf "$TEMP_DIR/.git"
 
 # Copy all files from temp dir to BASE_DIR without overwriting existing local files (-n)
-# The /. syntax ensures hidden files are copied too
 cp -rn "$TEMP_DIR"/. "$BASE_DIR/" 2>/dev/null || true
 
 # Clean up temporary directory
@@ -53,13 +52,17 @@ TARGET_BAT_DIR="$BASE_DIR/custom-strategies"
 TARGET_BAT="$TARGET_BAT_DIR/general-zoopi.bat"
 
 if [ -f "$SOURCE_BAT" ]; then
-    # Ensure the destination folder exists (in case the repo structure changes)
     mkdir -p "$TARGET_BAT_DIR"
-    
     cp -f "$SOURCE_BAT" "$TARGET_BAT"
-    echo "   [OK] general-zoopi.bat copied to custom-strategies."
+    echo "   [OK] general-zoopi.bat copied."
 else
     echo "   [WARNING] $SOURCE_BAT not found. Skipping."
 fi
 
-echo "--- Initialization Complete ---"
+# ---------------------------------------------------------
+# 3. LAUNCH
+# ---------------------------------------------------------
+echo "--- Initialization Complete. Launching main_script.sh ---"
+
+# Execute the main script
+"$TARGET_SCRIPT"
