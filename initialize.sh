@@ -60,9 +60,29 @@ else
 fi
 
 # ---------------------------------------------------------
-# 3. LAUNCH
+# 3. SYMLINK & PERMISSIONS (Requires Sudo)
+# ---------------------------------------------------------
+echo "3. Setting up /home/zapret symlink and permissions..."
+
+# Remove /home/zapret if it already exists (as a folder or link) to avoid errors
+if [ -L "/home/zapret" ] || [ -e "/home/zapret" ]; then
+    echo "   Removing existing /home/zapret..."
+    sudo rm -rf /home/zapret
+fi
+
+# Create the symlink
+echo "   Creating symlink: /home/zapret -> $BASE_DIR"
+sudo ln -s "$BASE_DIR" /home/zapret
+
+# Set recursive permissions
+echo "   Setting permissions to 777..."
+sudo chmod -R 777 /home/zapret/
+
+# ---------------------------------------------------------
+# 4. LAUNCH
 # ---------------------------------------------------------
 echo "--- Initialization Complete. Launching main_script.sh ---"
 
-# Execute the main script
+# Execute the main script from the new symlinked path or BASE_DIR
+# Using BASE_DIR here to ensure absolute path execution
 "$TARGET_SCRIPT"
