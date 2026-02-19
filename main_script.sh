@@ -6,15 +6,18 @@ set -e
 BASE_DIR="$(realpath "$(dirname "$0")")"
 REPO_DIR="$BASE_DIR/zapret-latest"
 CUSTOM_DIR="./custom-strategies"
+CUSTOM_RULES_DIR="$BASE_DIR/custom-rules"
 REPO_URL="https://github.com/Flowseal/zapret-discord-youtube"
 NFQWS_PATH="$BASE_DIR/nfqws"
 CONF_FILE="$BASE_DIR/conf.env"
 STOP_SCRIPT="$BASE_DIR/stop_and_clean_nft.sh"
+SERVICE_SCRIPT="$BASE_DIR/service.sh"
 MAIN_REPO_REV="7952e58ee8b068b731d55d2ef8f491fd621d6ff0"
 
 # Флаг отладки
 DEBUG=false
 NOINTERACTIVE=false
+FIRST_RUN=false
 
 # GameFilter
 GAME_FILTER_PORTS="1024-65535"
@@ -80,6 +83,33 @@ setup_repository() {
         chmod +x "$BASE_DIR/rename_bat.sh"
         rm -rf "$REPO_DIR/.git"
         "$BASE_DIR/rename_bat.sh" || handle_error "Ошибка при переименовании файлов"
+
+        # --- НАЧАЛО ИЗМЕНЕНИЙ: Копирование кастомных списков ---
+        log "Применение кастомных списков из $CUSTOM_RULES_DIR..."
+        
+        local dest_list_dir="$REPO_DIR/lists"
+        
+        # Удаляем дефолтные файлы
+        rm -f "$dest_list_dir/ipset-all.txt"
+        rm -f "$dest_list_dir/list-general.txt"
+        
+        # Копируем кастомные файлы
+        if [ -f "$CUSTOM_RULES_DIR/ipset-all.txt" ]; then
+            cp "$CUSTOM_RULES_DIR/ipset-all.txt" "$dest_list_dir/" || handle_error "Не удалось скопировать ipset-all.txt"
+        else
+            handle_error "Файл $CUSTOM_RULES_DIR/ipset-all.txt не найден"
+        fi
+
+        if [ -f "$CUSTOM_RULES_DIR/list-general.txt" ]; then
+            cp "$CUSTOM_RULES_DIR/list-general.txt" "$dest_list_dir/" || handle_error "Не удалось скопировать list-general.txt"
+        else
+            handle_error "Файл $CUSTOM_RULES_DIR/list-general.txt не найден"
+        fi
+        
+        log "Кастомные списки успешно скопированы."
+        
+        # Устанавливаем флаг первого запуска
+        FIRST_RUN=true
     fi
 }
 
@@ -291,6 +321,21 @@ main() {
 
     check_dependencies
     setup_repository
+
+    # Переход в режим сервиса (только при первом запуске)
+    if [ "$FIRST_RUN" = true ] && ! $NOINTERACTIVE; then
+        echo ""
+        read -p "Switch to service? [y/N]:" switch_to_service
+        if [[ "$switch_to_service" =~ ^[Yy1] ]]; then
+            if [ -f "$SERVICE_SCRIPT" ]; then
+                log "Переключение на service.sh..."
+                sudo /usr/bin/env bash "$SERVICE_SCRIPT"
+                exit 0
+            else
+                log "Предупреждение: $SERVICE_SCRIPT не найден"
+            fi
+        fi
+    fi
 
     # Включение GameFilter
     if $NOINTERACTIVE; then
