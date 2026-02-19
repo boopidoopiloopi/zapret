@@ -6,16 +6,27 @@ set -e
 # Determine the directory where this script is stored
 BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-REPO_URL="https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git"
-TEMP_DIR=$(mktemp -d)
-
 echo "--- Starting Initialization ---"
 echo "Target Directory: $BASE_DIR"
 
 # ---------------------------------------------------------
-# 1. CLONE & MERGE
+# 1. PRE-CHECK: service.sh
 # ---------------------------------------------------------
-echo "1. Cloning external repository..."
+if [ -f "$BASE_DIR/service.sh" ]; then
+    echo "1. service.sh found. Executing..."
+    chmod +x "$BASE_DIR/service.sh"
+    "$BASE_DIR/service.sh"
+else
+    echo "1. service.sh not found. Skipping pre-check."
+fi
+
+# ---------------------------------------------------------
+# 2. CLONE & MERGE
+# ---------------------------------------------------------
+REPO_URL="https://github.com/Sergeydigl3/zapret-discord-youtube-linux.git"
+TEMP_DIR=$(mktemp -d)
+
+echo "2. Cloning external repository..."
 git clone "$REPO_URL" "$TEMP_DIR"
 
 # Remove the .git folder from the downloaded files
@@ -29,9 +40,9 @@ rm -rf "$TEMP_DIR"
 echo "   Repository content merged successfully."
 
 # ---------------------------------------------------------
-# 2. APPLY CUSTOMIZATIONS
+# 3. APPLY CUSTOMIZATIONS
 # ---------------------------------------------------------
-echo "2. Applying custom files..."
+echo "3. Applying custom files..."
 
 # --- Replace main_script.sh ---
 SOURCE_SCRIPT="$BASE_DIR/boopishit/main_script.sh"
@@ -60,11 +71,11 @@ else
 fi
 
 # ---------------------------------------------------------
-# 3. SYMLINK & PERMISSIONS (Requires Sudo)
+# 4. SYMLINK & PERMISSIONS (Requires Sudo)
 # ---------------------------------------------------------
-echo "3. Setting up /home/zapret symlink and permissions..."
+echo "4. Setting up /home/zapret symlink and permissions..."
 
-# Remove /home/zapret if it already exists (as a folder or link) to avoid errors
+# Remove /home/zapret if it already exists to avoid errors
 if [ -L "/home/zapret" ] || [ -e "/home/zapret" ]; then
     echo "   Removing existing /home/zapret..."
     sudo rm -rf /home/zapret
@@ -79,10 +90,9 @@ echo "   Setting permissions to 777..."
 sudo chmod -R 777 /home/zapret/
 
 # ---------------------------------------------------------
-# 4. LAUNCH
+# 5. LAUNCH
 # ---------------------------------------------------------
 echo "--- Initialization Complete. Launching main_script.sh ---"
 
-# Execute the main script from the new symlinked path or BASE_DIR
-# Using BASE_DIR here to ensure absolute path execution
+# Execute the main script
 "$TARGET_SCRIPT"
